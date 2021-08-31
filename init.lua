@@ -5,14 +5,17 @@
 ------------------------------------------------------------------------------------------
 -- Since I dont know where you will put this folder I attempt to get the relative location of file in order to import files within the correct folder.
 -- Basically I need a relative from file require and this is the easyest alternative.
+local gears = require("gears")
 local root_path = debug.getinfo(1).source:match("@(.*/)")
+local config_path = gears.filesystem.get_configuration_dir()
+local relative_path = (root_path:sub(0, #config_path) == config_path) and root_path:sub(#config_path+1) or root_path
 
 -- Imports.
 ------------------------------------------------------------------------------------------
 
 local awful = require("awful")
-local binaryTreeNode = require(root_path .. "bidirectionalBinaryTreeNode")
-local util = require(root_path .. "util")
+local binaryTreeNode = require(relative_path .. "bidirectionalBinaryTreeNode")
+local util = require(relative_path .. "util")
 
 -- Global imports. Also keeps the intelesense complaining to one location.
 ------------------------------------------------------------------------------------------
