@@ -5,12 +5,7 @@
 -- All a tree needs to do is just have a root attribute to be considered a tree of this.
 --
 ------------------------------------------------------------------------------------------
-
-local gears = require("gears")
-local root_path = debug.getinfo(1).source:match("@(.*/)")
-local config_path = gears.filesystem.get_configuration_dir()
-local relative_path = (root_path:sub(0, #config_path) == config_path) and root_path:sub(#config_path+1) or root_path
-local util = require(relative_path.. "util")
+local util = require(TREES.relative_path.. "util")
 
 local node = {}
 -- Not 100% sure why this works but it prevents certain null pointer exceptions from occuring.
