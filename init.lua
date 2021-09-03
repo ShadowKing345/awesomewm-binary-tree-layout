@@ -3,33 +3,26 @@
 --  "Module" that contains all the code for creating the layout incuding layout functions.
 --
 ------------------------------------------------------------------------------------------
+TREES = TREES or {}
+
 -- Since I dont know where you will put this folder I attempt to get the relative location of file in order to import files within the correct folder.
 -- Basically I need a relative from file require and this is the easyest alternative.
 local gears = require("gears")
 local root_path = debug.getinfo(1).source:match("@(.*/)")
 local config_path = gears.filesystem.get_configuration_dir()
-local relative_path = (root_path:sub(0, #config_path) == config_path) and root_path:sub(#config_path+1) or root_path
+TREES.relative_path = (root_path:sub(0, #config_path) == config_path) and root_path:sub(#config_path + 1) or root_path
 
 -- Imports.
 ------------------------------------------------------------------------------------------
 
 local awful = require("awful")
-local binaryTreeNode = require(relative_path .. "bidirectionalBinaryTreeNode")
-local util = require(relative_path .. "util")
+local binaryTreeNode = require(TREES.relative_path .. "bidirectionalBinaryTreeNode")
+local util = require(TREES.relative_path .. "util")
 
 -- Global imports. Also keeps the intelesense complaining to one location.
 ------------------------------------------------------------------------------------------
-local capi = {
-    client = client,
-    screen = screen,
-    mouse = mouse,
-    mousegrabber = mousegrabber
-}
+local capi = {client = client, screen = screen, mouse = mouse, mousegrabber = mousegrabber}
 
--- Module specific gloabl imports.
-------------------------------------------------------------------------------------------
-TREES = TREES or {}
--- You can use/modify this variable in other modules instead of always requiring this file.
 BINARY_TREE_LAYOUT_GO_VERTICAL = BINARY_TREE_LAYOUT_GO_VERTICAL
 
 -- Layout builder.
@@ -60,8 +53,7 @@ function binaryTreeNode:updateClients(andChildren)
 
             -- Small line reduction to not have to do 6 assignment calls.
             -- s: size; d: direction. 
-            local t = self.is_vertical and {s = "height", d = "y"} or
-                          {s = "width", d = "x"}
+            local t = self.is_vertical and {s = "height", d = "y"} or {s = "width", d = "x"}
 
             leftArea[t.s] = workarea[t.s] * split
             rightArea[t.s] = workarea[t.s] * (1 - split)
@@ -87,10 +79,14 @@ function binaryTreeBuilder.toggleDirection()
 end
 
 --[[ Sets the direction of the next split to be horizontal.]]
-function binaryTreeBuilder.horizontal() BINARY_TREE_LAYOUT_GO_VERTICAL = false end
+function binaryTreeBuilder.horizontal()
+    BINARY_TREE_LAYOUT_GO_VERTICAL = false
+end
 
 --[[ Sets the direction of the next split to be vertical.]]
-function binaryTreeBuilder.vertical() BINARY_TREE_LAYOUT_GO_VERTICAL = true end
+function binaryTreeBuilder.vertical()
+    BINARY_TREE_LAYOUT_GO_VERTICAL = true
+end
 
 --[[
     Builds the layout.
@@ -103,8 +99,7 @@ function binaryTreeBuilder.vertical() BINARY_TREE_LAYOUT_GO_VERTICAL = true end
 ]]
 function binaryTreeBuilder:build(args)
     args = args or {}
-    BINARY_TREE_LAYOUT_GO_VERTICAL = args.startVertical or
-                                         BINARY_TREE_LAYOUT_GO_VERTICAL or false
+    BINARY_TREE_LAYOUT_GO_VERTICAL = args.startVertical or BINARY_TREE_LAYOUT_GO_VERTICAL or false
 
     local layout = {name = args.name or "binaryTreeLayout"}
 
@@ -121,13 +116,10 @@ function binaryTreeBuilder:build(args)
         workarea.gap = p.useless_gap or 0
 
         -- Gets the name of the tag.
-        local tag = tostring(p.tag or capi.screen[p.screen].selected_tag or
-                                 awful.tag.selected(capi.mouse.screen))
+        local tag = tostring(p.tag or capi.screen[p.screen].selected_tag or awful.tag.selected(capi.mouse.screen))
 
         -- Insures that the tree exists in tag.
-        if TREES[tag] == nil then
-            TREES[tag] = {root = binaryTreeNode.new(), clients = {}}
-        end
+        if TREES[tag] == nil then TREES[tag] = {root = binaryTreeNode.new(), clients = {}} end
         -- Gets the tree.
         local tree = TREES[tag]
 
@@ -141,9 +133,7 @@ function binaryTreeBuilder:build(args)
                 local difference = util.tableDiff(p.clients, tree.clients)
 
                 local baseNode = tree.root
-                if prevFocus then
-                    baseNode = tree.root:find(prevFocus) or tree.root
-                end
+                if prevFocus then baseNode = tree.root:find(prevFocus) or tree.root end
 
                 for _, newClient in ipairs(difference) do
                     if baseNode.data then
@@ -152,8 +142,7 @@ function binaryTreeBuilder:build(args)
                         baseNode.is_vertical = false
 
                         baseNode:addLeft(binaryTreeNode.new(left_client))
-                        local newNode =
-                            baseNode:addRight(binaryTreeNode.new(newClient))
+                        local newNode = baseNode:addRight(binaryTreeNode.new(newClient))
 
                         baseNode.data = nil
                         baseNode.is_vertical = BINARY_TREE_LAYOUT_GO_VERTICAL
@@ -168,17 +157,14 @@ function binaryTreeBuilder:build(args)
             -- If client got removed.
             if changed < 0 then
                 local difference = util.tableDiff(tree.clients, p.clients)
-                for _, client in ipairs(difference) do
-                    tree.root:removeLeaf(client)
-                end
+                for _, client in ipairs(difference) do tree.root:removeLeaf(client) end
             end
         else
             -- If no changes to the number of clients were made there its possible that the position of clients has changed.
             -- Client being set as floting does count as a removal event which saves a lot of heavy lifting from the layout.
 
             -- Gets number of clients that are different.
-            local clientPosDifference =
-                util.tableDiffIndex(p.clients, tree.clients)
+            local clientPosDifference = util.tableDiffIndex(p.clients, tree.clients)
             if #clientPosDifference > 0 then
                 -- This is with the assumption that only 2 clients can ever change.
                 -- If more then 2 is possible or you have custom code that allows you to swap multiple.
@@ -204,66 +190,9 @@ function binaryTreeBuilder:build(args)
         -- tree.root.print(tree.root)
     end
 
+    -- Explination of how a march will be conducted for the following method.
+    -- Since no march will occur if parent is null it is not included to reduce size.
     --[[
-    Handles resizing of clients from mouse button (default Mod4 + right click).
-
-    @param client: Actual client that is being resized.
-    @param corner: String statement of the corner grabbed. I.E. "top_left", "bottom_right", etc...
-    @param x: Unused but provides the current x pos of the mouse.
-    @param y: Unused but provides the current y pos of the mouse.
-    ]]
-    function layout.mouse_resize_handler(client, corner, _, _)
-        local tag = tostring(capi.screen[client.screen].selected_tag or
-                                 awful.tag.selected(capi.mouse.screen))
-        local tree = TREES[tag]
-
-        -- Splits the string into array instance of the words.
-        -- Corner will only ever be the corner, never the edge so no just right etc.
-        local direction = {}
-        for k, _ in string.gmatch(corner, "%a+") do
-            table.insert(direction, k)
-        end
-        -- Gets the direction based on the word provided.
-        -- It can only ever be 2 directions so only one check is needed.
-        local bottom = direction[1] == "bottom"
-        local right = direction[2] == "right"
-
-        local client_node = tree.root:find(client)
-        local horizontal = client_node
-        local vertical = client_node
-
-        -- This is basically the equivalent of black magic to me and I wrote it.
-        -- This is a marching while loop that will only march up to the nodes parenets if the conditions are met.
-        -- The oposite of the conditions after the "or" would be considered a valid node.
-        local prevNode
-        while -- Null check to not throw a null pointer exception. or end up in a null state.
-        horizontal.parent and
-            ( -- checks the direction being draged. If being dragged to the right then node cannot be a right node.
-            -- If being draged to the left then node cannot be a left node.
-            ((right and horizontal.parent.right.id == horizontal.id) or
-                (not right and horizontal.parent.left.id == horizontal.id)) -- Checks if the node is set to be a vertical node.
-            -- A node can be in the correct location based on the draggin direction but can be vertical.
-            -- If this is true the end result will be very odd as when you drag it will drag in the wrong direction.
-            or horizontal.parent.is_vertical) do
-            prevNode = horizontal
-            horizontal = horizontal.parent
-        end
-        -- Not 100% sure why this works but it prevents you from grabbing the right side only for the left node to be grabbed instead.
-        horizontal = (prevNode and horizontal.parent) or horizontal.parent or
-                         nil
-
-        -- Copy of the horizonal loop but now vertical.
-        prevNode = nil
-        while vertical.parent and
-            (((bottom and vertical.parent.right.id == vertical.id) or
-                (not bottom and vertical.parent.left.id == vertical.id)) or
-                not vertical.parent.is_vertical) do
-            prevNode = vertical
-            vertical = vertical.parent
-        end
-        vertical = (prevNode and vertical.parent) or vertical.parent or nil -- The follow is a boolean tree for the previous while loops provide visual context for a march condition.
-        -- Since no march will occur if parent is null it is not included to reduce size.
-        --[[
             | P | > | L | R | V |  >&R  | !>&L  |   ( >&R | !>&L ) | V  |  P & ( ( >&R | !>&L ) | V )  |
             +---+---+---+---+---+-------+-------+-----------------------+------------------------------+
             | * |   |   |   |   |       |       |                       |                              |
@@ -292,6 +221,57 @@ function binaryTreeBuilder:build(args)
             P&((>&R|!>&L)|V): The condition where a march up the parent will be performed.
         ]]
 
+    --[[
+    	Retuns the node that matches the desired conditions. If fails will return nil.
+
+	@param startingNode: Where you want to start searching.
+	@param right_or_down: Boolean of the direction you wish to pull towards. Down if vertical is set to true.
+	@param vertical: Set true if you are looking for a vertical node.
+	@return: Node that matches these requirements or nil.
+	]]
+    function layout.getNodeByPullDirection(startingNode, right_or_down, is_vertical)
+        local node = startingNode
+
+        -- This is basically the equivalent of black magic to me and I wrote it.
+        -- This is a marching while loop that will only march up to the nodes parenets if the conditions are met.
+        -- The oposite of the conditions after the "or" would be considered a valid node.
+        local prevNode
+        while node.parent
+            and (((right_or_down and node.parent.right.id == node.id) or (not right_or_down and node.parent.left.id == node.id))
+                or node.parent.is_vertical ~= is_vertical) do
+            prevNode = node
+            node = node.parent
+        end
+
+        -- Not sure why this works but it prevents you from grabbing and pulling towards an edge that does not have a node.
+        return (prevNode and node.parent) or node.parent or nil
+    end
+
+    --[[
+    Handles resizing of clients from mouse button (default Mod4 + right click).
+
+    @param client: Actual client that is being resized.
+    @param corner: String statement of the corner grabbed. I.E. "top_left", "bottom_right", etc...
+    @param x: Unused but provides the current x pos of the mouse.
+    @param y: Unused but provides the current y pos of the mouse.
+    ]]
+    function layout.mouse_resize_handler(client, corner, _, _)
+        local tag = tostring(capi.screen[client.screen].selected_tag or awful.tag.selected(capi.mouse.screen))
+        local tree = TREES[tag]
+
+        -- Splits the string into array instance of the words.
+        -- Corner will only ever be the corner, never the edge so no just right etc.
+        local direction = {}
+        for k, _ in string.gmatch(corner, "%a+") do table.insert(direction, k) end
+        -- Gets the direction based on the word provided.
+        -- It can only ever be 2 directions so only one check is needed.
+        local bottom = direction[1] == "bottom"
+        local right = direction[2] == "right"
+
+        local client_node = tree.root:find(client)
+        local horizontal = layout.getNodeByPullDirection(client_node, right, false)
+        local vertical = layout.getNodeByPullDirection(client_node, bottom, true)
+
         local prev_coords = {}
         -- name of mouse icon to be used.
         local cursor = "cross"
@@ -304,22 +284,14 @@ function binaryTreeBuilder:build(args)
 
                     if horizontal then
                         -- Clamps it between the inner gaps as the gaps act as padding for the window.
-                        horizontal.split =
-                            util.clamp(_mouse.x - horizontal.workarea.x,
-                                       horizontal.workarea.gap,
-                                       horizontal.workarea.width -
-                                           (horizontal.workarea.gap * 2)) /
-                                horizontal.workarea.width
+                        horizontal.split = util.clamp(_mouse.x - horizontal.workarea.x, horizontal.workarea.gap,
+                                                      horizontal.workarea.width - (horizontal.workarea.gap * 2)) / horizontal.workarea.width
                         horizontal:updateClients(false)
                     end
 
                     if vertical then
-                        vertical.split =
-                            util.clamp(_mouse.y - horizontal.workarea.y,
-                                       horizontal.workarea.gap,
-                                       horizontal.workarea.height -
-                                           (horizontal.workarea.gap * 2)) /
-                                horizontal.workarea.height
+                        vertical.split = util.clamp(_mouse.y - vertical.workarea.y, vertical.workarea.gap,
+                                                    vertical.workarea.height - (vertical.workarea.gap * 2)) / vertical.workarea.height
                         vertical:updateClients(false)
                     end
 
@@ -336,6 +308,8 @@ function binaryTreeBuilder:build(args)
     return layout
 end
 
-function binaryTreeBuilder.mt.__call(...) return binaryTreeBuilder:build(...) end
+function binaryTreeBuilder.mt.__call(...)
+    return binaryTreeBuilder:build(...)
+end
 
 return setmetatable(binaryTreeBuilder, binaryTreeBuilder.mt)
