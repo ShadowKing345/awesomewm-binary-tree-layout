@@ -99,4 +99,23 @@ function util.shallowCopy(tbl)
     return result
 end
 
+--[[
+    Merges the value of two tables.
+
+    @param tbl1: The table to be merged.
+    @param tbl2: The table from which the values being merged come from.
+    @return: the merged table.
+]]
+function util.mergeTables(tbl1, tbl2)
+   for k, v in pairs(tbl2) do
+       tbl1[k] = v
+   end 
+
+   for i, v in ipairs(tbl2) do
+       tbl1[i] = v
+   end
+
+   return tbl1
+end
+
 return util
