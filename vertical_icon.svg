@@ -1,16 +1,9 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg
-  width="300"
-  height="300"
-  xmlns="http://www.w3.org/2000/svg"
-  xmlns:svg="http://www.w3.org/2000/svg"
-     stroke="#000000"
-  >
- 
- <path d="M 20 140 l 0 20 260 0 0 -20 z" fill="#fffff2"/>
- <path d="M 140 180 l -36 36 0 20 36 -36 0 80 20 0 0 -80 36 36 0 -20 -36 -36 z" fill="#fffff2"/>
- <path d="M 140 120 l -36 -36 0 -20 36 36 0 -80 20 0 0 80 36 -36 0 20 -36 36 z" fill="#fffff2"/>
- <path d="M 40 165 l 0 5 220 0 0 -5 z" fill="#fffff2"/>
- <path d="M 40 130 l 0 5 220 0 0 -5 z" fill="#fffff2"/>
- 
+<svg width="300" height="300" xmlns="hppt://www.w3.org./2000/svg">
+<g fill="#a0a0a0"> 
+ <path d="M 20 140 l 0 20 260 0 0 -20 z"/>
+ <path d="M 140 180 l -36 36 0 20 36 -36 0 80 20 0 0 -80 36 36 0 -20 -36 -36 z"/>
+ <path d="M 140 120 l -36 -36 0 -20 36 36 0 -80 20 0 0 80 36 -36 0 20 -36 36 z"/>
+ <path d="M 40 165 l 0 5 220 0 0 -5 z"/>
+ <path d="M 40 130 l 0 5 220 0 0 -5 z"/>
+ </g>
 </svg>
