@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+  width="300"
+  height="300"
+  xmlns="http://www.w3.org/2000/svg"
+  xmlns:svg="http://www.w3.org/2000/svg">
+ 
+ <path d="M 140 20 l 20 0 0 260 -20 0 z" fill="#fffff2"/>
+ <path d="M 180 140 l 36 -36 20 0 -36 36 80 0 0 20 -80 0 36 36 -20 0 -36 -36 z" fill="#fffff2"/>
+ <path d="M 120 140 l -36 -36 -20 0 36 36 -80 0 0 20 80 0 -36 36 20 0 36 -36 z" fill="#fffff2"/>
+ <path d="M 165 40 l 5 0 0 220 -5 0 z" fill="#fffff2"/>
+ <path d="M 130 40 l 5 0 0 220 -5 0 z" fill="#fffff2"/>
+  
+</svg>
