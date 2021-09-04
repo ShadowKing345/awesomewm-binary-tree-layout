@@ -1,11 +1,18 @@
 # Binary Tree Layout for Awesome Window Manager
-<img src="icon.svg"/>
 
+<p align="center">
+  <img src="icon.svg" alt="icon.svg or a binary tree representation" style="height:400px;"/>
+</p>
+  
 ---
 The main goal of this micro project is to create a layout system for the Awesome Window Manager (awesomewm for short) that primairly uses a binary tree as its method of storage and manipulation of client windows.
 
 ## Table of Contents
 [Intoduction](#introduction)
+[How Binary Trees Are Used](#how-binary-trees-are-used)
+[Why Use A Binary Tree](#why-use-a-binary-tree)
+[Wait Where Did I Hear / See This?](#wait-where-did-i-hear-see-this)
+[Installation Guide](#installation-guide)
 
 ## Introduction
 A tree is a data storage method that when graphed looks similar to a tree specifically its roots (cause most of the time you view it upsidedown). From the root node of the tree a branching path is formed that will eventually end on a leaf (a node that contains no children). Binary trees only contain two nodes, often called left and right node.
@@ -89,7 +96,9 @@ In order to actually get the layout you will have to call the self build method 
 ```lua
 awful.layout.layouts = {
   -- ... Other layouts.
+  
   binaryTreeLayoutBuilder({}),
+  
   -- ... Other layouts.
  }
  ```
@@ -105,7 +114,9 @@ awful.layout.layouts = {
 ```lua
 awful.layout.layouts = {
   -- ... Other layouts.
+  
   binaryTreeLayoutBuilder({send_notifications=true}),
+  
   -- ... Other layouts.
 }
 ```
@@ -127,6 +138,7 @@ The widget itself provides some methods to control the split direction and the i
 -- widget is not a defined variable fyi. this is just an example.
 
 widget:toggleDirection() -- Toggles the direction and if set send a notification.
+
 -- Note the : is important as a null pointer error will be sent telling you that self is null if you use a dot instead.
 ```
 
