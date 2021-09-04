@@ -109,7 +109,7 @@ local configs = {name = "binaryTreeLayout", start_vertical = false, send_notific
     @param start_vertical: Starting point of the first split. Default false.
     @param name: Name of the returned layout. Never alter this unless you know what you are doing.
 ]]
-function binaryTreeBuilder:build(args)
+function binaryTreeBuilder.build(args)
     args = util.mergeTables(configs, args or {})
     BINARY_TREE_LAYOUT_GO_VERTICAL = args.start_vertical or BINARY_TREE_LAYOUT_GO_VERTICAL
     TREES.send_notifications = args.send_vertical
@@ -334,7 +334,7 @@ function binaryTreeBuilder:build(args)
 end
 
 function binaryTreeBuilder.mt.__call(...)
-    return binaryTreeBuilder:build(...)
+    return binaryTreeBuilder.build(...)
 end
 
 return setmetatable(binaryTreeBuilder, binaryTreeBuilder.mt)
