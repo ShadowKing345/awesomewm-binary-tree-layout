@@ -16,8 +16,8 @@ local direction_indicator = {mt = {}}
 -- Default style
 local l_style = {
     icons = {
-        horizontal = gears.filesystem.get_configuration_dir() .. TREES.relative_path .. "/horizontal_icon.svg",
-        vertical = gears.filesystem.get_configuration_dir() .. TREES.relative_path .. "/vertical_icon.svg",
+        horizontal = gears.filesystem.get_configuration_dir() .. TREES.relative_path .. "horizontal_icon.svg",
+        vertical = gears.filesystem.get_configuration_dir() .. TREES.relative_path .. "vertical_icon.svg",
     },
 }
 -- Gets merged with beautilful configs as first overwrite.
