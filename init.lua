@@ -5,20 +5,23 @@
 ------------------------------------------------------------------------------------------
 TREES = TREES or {}
 
--- Since I dont know where you will put this folder I attempt to get the relative location of file in order to import files within the correct folder.
--- Basically I need a relative from file require and this is the easyest alternative.
-local gears = require("gears")
-local root_path = debug.getinfo(1).source:match("@(.*/)")
-local config_path = gears.filesystem.get_configuration_dir()
-TREES.relative_path = (root_path:sub(0, #config_path) == config_path) and root_path:sub(#config_path + 1) or root_path
-
 -- Imports.
 ------------------------------------------------------------------------------------------
-
+local gears = require("gears")
 local awful = require("awful")
-local binaryTreeNode = require(TREES.relative_path .. "bidirectionalBinaryTreeNode")
-local util = require(TREES.relative_path .. "util")
 local naughty = require("naughty")
+
+-- Since I dont know where you will put this folder I attempt to get the relative location of file in order to import files within the correct folder.
+-- Basically I need a relative from file require and this is the easyest alternative.
+if not TREES.relative_path then
+    local root_path = debug.getinfo(1).source:match("@./(.*/)")
+    print(root_path)
+    local config_path = gears.filesystem.get_configuration_dir()
+    TREES.relative_path = (root_path:sub(0, #config_path) == config_path) and root_path:sub(#config_path + 1) or root_path
+end
+
+local util = require(TREES.relative_path .. "util")
+local binaryTreeNode = require(TREES.relative_path .. "bidirectionalBinaryTreeNode")
 
 -- Global imports. Also keeps the intelesense complaining to one location.
 ------------------------------------------------------------------------------------------
@@ -53,7 +56,7 @@ function binaryTreeNode:updateClients(andChildren)
             local rightArea = util.shallowCopy(workarea)
 
             -- Small line reduction to not have to do 6 assignment calls.
-            -- s: size; d: direction. 
+            -- s: size; d: direction.
             local t = self.is_vertical and {s = "height", d = "y"} or {s = "width", d = "x"}
 
             leftArea[t.s] = workarea[t.s] * split
@@ -77,7 +80,9 @@ end
 --[[ Toggles the direction the next split will be. ]]
 function binaryTreeBuilder.toggleDirection()
     BINARY_TREE_LAYOUT_GO_VERTICAL = not BINARY_TREE_LAYOUT_GO_VERTICAL
-    if TREES.send_notifications then naughty.notify({text = string.format("Next split will be %s.", (BINARY_TREE_LAYOUT_GO_VERTICAL and "Vertical") or "Horizontal")}) end
+    if TREES.send_notifications then
+        naughty.notify({text = string.format("Next split will be %s.", (BINARY_TREE_LAYOUT_GO_VERTICAL and "Vertical") or "Horizontal")})
+    end
 end
 
 --[[ Sets the direction of the next split to be horizontal.]]
@@ -108,14 +113,15 @@ function binaryTreeBuilder:build(args)
     args = util.mergeTables(configs, args or {})
     BINARY_TREE_LAYOUT_GO_VERTICAL = args.start_vertical or BINARY_TREE_LAYOUT_GO_VERTICAL
     TREES.send_notifications = args.send_vertical
+    TREES.debug_mode = args.debug
 
     local layout = {name = args.name}
 
     --[[
-    Method that creates / destroys nodes in the tree.
-    It also swaps clients if a swap event occurs.
+        Method that creates / destroys nodes in the tree.
+        It also swaps clients if a swap event occurs.
 
-    @param p: A manditory table contaning all important information about the current layout.
+        @param p: A manditory table contaning all important information about the current layout.
     ]]
     function layout.arrange(p)
         -- I use workarea rather then geometry as geometry is the actual screen dimentions while workarea is the avaliable space and the relative 0,0 postion for the screen.
@@ -194,8 +200,8 @@ function binaryTreeBuilder:build(args)
         tree.root.workarea = workarea
         tree.root:updateClients(true)
 
-        -- Debug. Uncomment to see structure of binary tree.
-        -- tree.root.print(tree.root)
+        -- Debug. Prints tree's content to stdout
+        if TREES.debug_mode then tree.root.print(tree.root) end
     end
 
     -- Explination of how a march will be conducted for the following method.
@@ -230,13 +236,13 @@ function binaryTreeBuilder:build(args)
         ]]
 
     --[[
-    	Retuns the node that matches the desired conditions. If fails will return nil.
+        Retuns the node that matches the desired conditions. If fails will return nil.
 
-	@param startingNode: Where you want to start searching.
-	@param right_or_down: Boolean of the direction you wish to pull towards. Down if vertical is set to true.
-	@param vertical: Set true if you are looking for a vertical node.
-	@return: Node that matches these requirements or nil.
-	]]
+        @param startingNode: Where you want to start searching.
+	      @param right_or_down: Boolean of the direction you wish to pull towards. Down if vertical is set to true.
+	      @param vertical: Set true if you are looking for a vertical node.
+	      @return: Node that matches these requirements or nil.
+	  ]]
     function layout.getNodeByPullDirection(startingNode, right_or_down, is_vertical)
         local node = startingNode
 
@@ -256,12 +262,26 @@ function binaryTreeBuilder:build(args)
     end
 
     --[[
-    Handles resizing of clients from mouse button (default Mod4 + right click).
+        Clamps down the splits to the correct gap sensitive value.
 
-    @param client: Actual client that is being resized.
-    @param corner: String statement of the corner grabbed. I.E. "top_left", "bottom_right", etc...
-    @param x: Unused but provides the current x pos of the mouse.
-    @param y: Unused but provides the current y pos of the mouse.
+        @param mouse: The x, y pos of the mouse.
+        @param workarea: The workarea to clamp the split down to. (should contain a gap value)
+        @param is_vertical: Is it a vertical clamp or horizontal clamp.
+        @return: The split corrected to respect gaps.
+    ]]
+    function layout.clampSplit(mouse, workarea, is_vertical)
+        local t = (is_vertical and {p = "y", s = "height"}) or {p = "x", s = "width"}
+        print(t)
+        return util.clamp(mouse[t.p] - workarea[t.p], workarea.gap, workarea[t.s] - (workarea.gap * 2)) / workarea[t.s]
+    end
+
+    --[[
+        Handles resizing of clients from mouse button (default Mod4 + right click).
+
+        @param client: Actual client that is being resized.
+        @param corner: String statement of the corner grabbed. I.E. "top_left", "bottom_right", etc...
+        @param x: Unused but provides the current x pos of the mouse.
+        @param y: Unused but provides the current y pos of the mouse.
     ]]
     function layout.mouse_resize_handler(client, corner, _, _)
         local tag = tostring(capi.screen[client.screen].selected_tag or awful.tag.selected(capi.mouse.screen))
@@ -291,15 +311,12 @@ function binaryTreeBuilder:build(args)
                     prev_coords = {x = _mouse.x, y = _mouse.y}
 
                     if horizontal then
-                        -- Clamps it between the inner gaps as the gaps act as padding for the window.
-                        horizontal.split = util.clamp(_mouse.x - horizontal.workarea.x, horizontal.workarea.gap,
-                                                      horizontal.workarea.width - (horizontal.workarea.gap * 2)) / horizontal.workarea.width
+                        horizontal.split = layout.clampSplit(_mouse, horizontal.workarea, false)
                         horizontal:updateClients(false)
                     end
 
                     if vertical then
-                        vertical.split = util.clamp(_mouse.y - vertical.workarea.y, vertical.workarea.gap,
-                                                    vertical.workarea.height - (vertical.workarea.gap * 2)) / vertical.workarea.height
+                        vertical.split = layout.clampSplit(_mouse, vertical.workarea, true)
                         vertical:updateClients(false)
                     end
 
