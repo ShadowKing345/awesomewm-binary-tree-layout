@@ -18,6 +18,7 @@ TREES.relative_path = (root_path:sub(0, #config_path) == config_path) and root_p
 local awful = require("awful")
 local binaryTreeNode = require(TREES.relative_path .. "bidirectionalBinaryTreeNode")
 local util = require(TREES.relative_path .. "util")
+local naughty = require("naughty")
 
 -- Global imports. Also keeps the intelesense complaining to one location.
 ------------------------------------------------------------------------------------------
@@ -76,17 +77,23 @@ end
 --[[ Toggles the direction the next split will be. ]]
 function binaryTreeBuilder.toggleDirection()
     BINARY_TREE_LAYOUT_GO_VERTICAL = not BINARY_TREE_LAYOUT_GO_VERTICAL
+    if TREES.send_notifications then naughty.notify({text = string.format("Next split will be %s.", (BINARY_TREE_LAYOUT_GO_VERTICAL and "Vertical") or "Horizontal")}) end
 end
 
 --[[ Sets the direction of the next split to be horizontal.]]
 function binaryTreeBuilder.horizontal()
     BINARY_TREE_LAYOUT_GO_VERTICAL = false
+    if TREES.send_notifications then naughty.notify({text = "Next split will be Horizontal."}) end
 end
 
 --[[ Sets the direction of the next split to be vertical.]]
 function binaryTreeBuilder.vertical()
     BINARY_TREE_LAYOUT_GO_VERTICAL = true
+    if TREES.send_notifications then naughty.notify({text = "Next split will be Vertical."}) end
 end
+
+-- Default config settings for the builder.
+local configs = {name = "binaryTreeLayout", start_vertical = false, send_notifications = false, debug = false}
 
 --[[
     Builds the layout.
@@ -94,14 +101,15 @@ end
     @param args: Additional arguments provided to the builder. Provide it as a table of k,v pairs for additioanl lua nausense.
     @return: The layout obj. (This is what you put in the layouts array.)
 
-    @param startVertical: Starting point of the first split. Default false.
+    @param start_vertical: Starting point of the first split. Default false.
     @param name: Name of the returned layout. Never alter this unless you know what you are doing.
 ]]
 function binaryTreeBuilder:build(args)
-    args = args or {}
-    BINARY_TREE_LAYOUT_GO_VERTICAL = args.startVertical or BINARY_TREE_LAYOUT_GO_VERTICAL or false
+    args = util.mergeTables(configs, args or {})
+    BINARY_TREE_LAYOUT_GO_VERTICAL = args.start_vertical or BINARY_TREE_LAYOUT_GO_VERTICAL
+    TREES.send_notifications = args.send_vertical
 
-    local layout = {name = args.name or "binaryTreeLayout"}
+    local layout = {name = args.name}
 
     --[[
     Method that creates / destroys nodes in the tree.
