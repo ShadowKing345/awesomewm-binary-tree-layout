@@ -15,7 +15,6 @@ local naughty = require("naughty")
 -- Basically I need a relative from file require and this is the easyest alternative.
 if not TREES.relative_path then
     local root_path = debug.getinfo(1).source:match("@./(.*/)")
-    print(root_path)
     local config_path = gears.filesystem.get_configuration_dir()
     TREES.relative_path = (root_path:sub(0, #config_path) == config_path) and root_path:sub(#config_path + 1) or root_path
 end
@@ -95,6 +94,22 @@ end
 function binaryTreeBuilder.vertical()
     BINARY_TREE_LAYOUT_GO_VERTICAL = true
     if TREES.send_notifications then naughty.notify({text = "Next split will be Vertical."}) end
+end
+
+--[[Toggles the direction of the branch the focused client is in]]
+function binaryTreeBuilder.toggleNodeDirection(client)
+    client = client or capi.client.focus
+
+    if not client then return end
+
+    local tag = tostring(capi.screen[client.screen].selected_tag or awful.tag.selected(capi.mouse.screen))
+    local tree = TREES[tag]
+    local client_node = tree.root:find(client)
+
+    if client_node and client_node.parent then
+        client_node.parent.is_vertical = not client_node.parent.is_vertical
+        client_node.parent:updateClients(false)
+    end
 end
 
 -- Default config settings for the builder.
