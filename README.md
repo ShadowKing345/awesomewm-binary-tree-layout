@@ -235,7 +235,7 @@ An icon file has been provided in the folder `icon.svg`. You can use your own if
 ## Advanced Stuff
 This section is mainly meant for developers and individuals who would like to better understand or alter the layout in a certain way.
 
-###TOC
+### TOC
 - [Overwriting A Method](#i-do-not-like-how-you-handled-xyz-is-there-a-way-i-can-change-it)
 
 ### I Do Not Like How You Handled X,Y,Z. Is There A Way I Can Change It?
