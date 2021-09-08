@@ -3,7 +3,6 @@
 -- Library of utility functions used.
 --
 ------------------------------------------------------------------------------------------
-
 local random = math.random
 local util = {}
 
@@ -54,7 +53,7 @@ function util.tableDiffIndex(tbl1, tbl2)
 end
 
 --[[
-    Simple clamp function (probably better way to do it ngl).
+    Simple clamp function.
 
     @param v: Value to be clamped
     @param min: Min value to be set to if less then.
@@ -62,9 +61,7 @@ end
     @return: Clamp value.
 ]]
 function util.clamp(v, min, max)
-    v = math.max(v, min)
-    v = math.min(v, max)
-    return v
+    return math.max(math.min(v, max), min)
 end
 
 --[[
@@ -73,10 +70,10 @@ end
     @return: UUID string.
 ]]
 function util.uuid()
-    local template ='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
-    return string.gsub(template, '[xy]', function (c)
-        local v = (c == 'x') and random(0, 0xf) or random(8, 0xb)
-        return string.format('%x', v)
+    local template = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+    return string.gsub(template, "[xy]", function(c)
+        local v = (c == "x") and random(0, 0xf) or random(8, 0xb)
+        return string.format("%x", v)
     end)
 end
 
@@ -88,13 +85,9 @@ end
 ]]
 function util.shallowCopy(tbl)
     local result = {}
-    for k, v in pairs(tbl) do
-        result[k] = v
-    end
+    for k, v in pairs(tbl) do result[k] = v end
 
-    for i, v in ipairs(tbl) do
-        result[i] = v
-    end
+    for i, v in ipairs(tbl) do result[i] = v end
 
     return result
 end
@@ -107,15 +100,11 @@ end
     @return: the merged table.
 ]]
 function util.mergeTables(tbl1, tbl2)
-   for k, v in pairs(tbl2) do
-       tbl1[k] = v
-   end 
+    for k, v in pairs(tbl2) do tbl1[k] = v end
 
-   for i, v in ipairs(tbl2) do
-       tbl1[i] = v
-   end
+    for i, v in ipairs(tbl2) do tbl1[i] = v end
 
-   return tbl1
+    return tbl1
 end
 
 return util
