@@ -14,7 +14,7 @@ local naughty = require("naughty")
 -- Since I dont know where you will put this folder I attempt to get the relative location of file in order to import files within the correct folder.
 -- Basically I need a relative from file require and this is the easyest alternative.
 if not TREES.relative_path then
-    local root_path = debug.getinfo(1).source:match("@./(.*/)")
+    local root_path = debug.getinfo(1).source:match("@(.*/)")
     local config_path = gears.filesystem.get_configuration_dir()
     TREES.relative_path = (root_path:sub(0, #config_path) == config_path) and root_path:sub(#config_path + 1) or root_path
 end
