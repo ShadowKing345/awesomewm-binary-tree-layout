@@ -9,6 +9,8 @@ The main goal of this micro project is to create a layout system for the Awesome
 - [How Binary Trees Are Used](#how-binary-trees-are-used)
 - [Why Use A Binary Tree](#why-use-a-binary-tree)
 - [Wait Where Did I Hear / See This](#wait-where-did-i-hear--see-this-before)
+- [Features](#features-of-the-layout)
+- [Known Issues](#known-issues)
 * [Installation Guide](#installation-guide)
   * [Prerequisites](#prerequisites)
   * [Step 1: Cloning](#step-1-clone-the-repo)
@@ -17,6 +19,7 @@ The main goal of this micro project is to create a layout system for the Awesome
   * [Step 4: (Optional) Notification or Widget](#step-4-optional-setting-up-notifications-or-the-widget)
 - [Additional Settings](#additional-settings)
 - [Additional Notes](#additional-notes)
+- [Advance Stuff](#advanced-stuff)
 
 ## Introduction
 A tree is a data storage method that when graphed looks similar to a tree specifically its roots (cause most of the time you view it upsides).
@@ -73,6 +76,23 @@ All the other splits will adjust to respect the new sizes while maintaining the 
 ## Wait Where Did I Hear / See This Before?
 If you have used text editors such as Neovim, Vim, or Vi, IDE such as Visual Studio, VSCode, or any Jetbrains IDE, Window managers such as I3, then you most likely have either used or heard of such a method of splitting before.
 
+## Features Of The Layout
+Here is a list of features that the layout can currently do.
+- Dynamically alter the direction of a branch.
+- Resize branches based on the corner dragged of a client. \(Mouse Handler Event)
+- Show notifications when you change the direction.
+- A widget that can indicate the direction of the next split is provided.
+
+## Known Issues
+Sadly even this layout has some issues.
+- When a reset occurs \(I.E. you reload the awesomewm configs) the former layout data is lost. This is sadly one thing that cannot be fixed easily.
+However, a failsafe has been added to ensure that if such an event were to occur all clients would be arranged horizontally according to the split rules.
+- Cannot resize with keyboard bindings. Known issue however a WIP solution is currently being worked on that can allow for other layouts to still work.
+- An application opened and closed so many windows that the layout broke. You can simply reset the configs and that should fix the issue, but you loose the layout data, unfortunately.
+- Zoom, or more specifically an application that is opening more windows than it should.
+This issue relates to the previous issue and probably the best fix would be to either contact the development team and ask them either remove the extra window or mark them as floating better.
+Otherwise, you can set up rules for the window to ensure they are floating or behaving properly.
+
 ## Installation Guide
 Warning: This guide assumed you have some knowledge of basic programing, the Lua language, and awesomewm API. If something does not quite make sense try to search for it as I attempted to not use too much complex programming theory.
 
@@ -81,7 +101,7 @@ Warning: This guide assumed you have some knowledge of basic programing, the Lua
 - None. Assuming I did not accidentally call something that should not be called it should be a standalone addition.
 
 ### Step 1: Clone the repo
-Clone the repo into a config directory (commonly `$XDG_CONFIG_HOME/awesome/` assuming you made your own custom config)
+Clone the repo into a config directory \(commonly `$XDG_CONFIG_HOME/awesome/` assuming you made your own custom config)
 
 ```shell
 git clone https://github.com/ShadowKing345/awesomewm-binary-tree-layout.git binaryTreeLayout
@@ -194,7 +214,7 @@ Both builders contain additional settings that can be changed to better suit the
 The layout builder contains the following options:
 * name: The name the layout will be set to. 
 **This should not be changed from default unless you understand what will happen.**
-Change this if you have a conflict occur with another layout.
+Change this if you have a conflict occurring with another layout.
 * start_vertical: Changes the starting direction of layout (Default: false)
 * send_notifications: Set to true to have the layout send a notification when the direction switch methods are called.
 * debug: Set to true to output the content of the tree to the console (assuming you can see it).
@@ -211,3 +231,35 @@ The widget builder contains the following options:
 ## Additional Notes
 - Setting layout_binaryTreeLayout or layout_\[name you set for the layout] will set the icon used in the standard `layoutbox` widget.
 An icon file has been provided in the folder `icon.svg`. You can use your own if you want since the one I made is quite large.
+
+## Advanced Stuff
+This section is mainly meant for developers and individuals who would like to better understand or alter the layout in a certain way.
+
+###TOC
+- [Overwriting A Method](#i-do-not-like-how-you-handled-xyz-is-there-a-way-i-can-change-it)
+
+### I Do Not Like How You Handled X,Y,Z. Is There A Way I Can Change It?
+Yes there is a way. Most of the methods are made the equivalent of public for Lua.
+This means that you can overwrite them completely to do what you want instead.
+
+For example. If you want to change the layout handler perform these steps:
+```lua
+--First, Generate the layout using the builder.
+local layout = binaryTreeLayoutBuilder({})
+
+--Then simply overwrite the arange method to do what you want instead.
+function layout.arange(p)
+--... Your code.
+end
+
+--Or
+
+layout.arange = function(p) --[[..Your code]] end
+```
+
+Most of the provided documentation should give you a fairly decent understanding of what parameters are that need to be provided.
+Some are provided by awesomewm itself such as with arrange and the mouse handler.
+
+Note: Some methods are put in the builder itself such as toggle directions and not the actual layout.
+Look into the lua files to see which one is used where. If it is inside the build method then its most likely a layout method else it's a builder method.
+The layout builder is the init.lua file.
