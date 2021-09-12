@@ -168,21 +168,21 @@ function direction_indicator.new(args)
         TREES.widget:buttons(args.buttons)
 
         function TREES.widget:toggleDirection()
+            layout.toggleDirection()
             self.imagebox.image = (BINARY_TREE_LAYOUT_GO_VERTICAL and self.style.icons.vertical) or self.style.icons.horizontal
             self.ttp:set_text(parse_string(args.toolTipString))
-            layout.toggleDirection()
         end
 
         function TREES.widget:horizontal()
+            layout.horizontal()
             self.imagebox.image = self.style.icons.horizontal
             self.ttp:set_text(parse_string(args.toolTipString))
-            layout.horizontal()
         end
 
         function TREES.widget:vertical()
+            layout.vertical()
             self.imagebox.image = self.style.icons.vertical
             self.ttp:set_text(parse_string(args.toolTipString))
-            layout.vertical()
         end
 
         w = TREES.widget
