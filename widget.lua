@@ -8,20 +8,32 @@ local gears = require("gears")
 local beautilful = require("beautiful")
 local util = require(TREES.relative_path .. "/util")
 local layout = require(TREES.relative_path)
-local tooltip = require("awful.tooltip")
 local button = require("awful.button")
 
 local direction_indicator = {mt = {}}
 
 -- Default style
-local defaultStyle = {
-    icons = {
-        horizontal = gears.filesystem.get_configuration_dir() .. TREES.relative_path .. "horizontal_icon.svg",
-        vertical = gears.filesystem.get_configuration_dir() .. TREES.relative_path .. "vertical_icon.svg",
-    },
-}
--- Gets merged with beautilful configs as first overwrite.
-defaultStyle = util.mergeTables(l_style, beautilful["binaryTreeLayoutWidget"] or {})
+local function defaultStyle()
+    local style = {
+        icons = {
+            horizontal = gears.filesystem.get_configuration_dir() .. TREES.relative_path .. "horizontal_icon.svg",
+            vertical = gears.filesystem.get_configuration_dir() .. TREES.relative_path .. "vertical_icon.svg",
+        },
+        tooltip = {
+            padding = {vertical = 3, horizontal = 5},
+            margin = 0,
+            timeout = 1,
+            font = "Sans 12",
+            border_width = 2,
+            set_position = nil,
+            color = {border = "#404040", text = "#aaaaaa", wibox = "#202020"},
+            shape = nil,
+        },
+        colors = {},
+    }
+    -- Gets merged with beautilful configs as first overwrite.
+    return util.mergeTables(style, beautilful["binaryTreeLayoutWidget"] or {})
+end
 
 --[[
     Method used to generate string which the tooltip text get set to.
@@ -49,7 +61,7 @@ end))
 ]]
 function direction_indicator.new(args)
     args = args or {}
-    local style = util.mergeTables(defaultStyle, args.style or {})
+    local style = util.mergeTables(defaultStyle(), args.style or {})
     local toolTipString = args.toolTipString or l_toolTipString
     local buttons = gears.table.join(l_buttons, args.buttons or {})
 
@@ -78,17 +90,25 @@ function direction_indicator.new(args)
 
         function TREES.widget:vertical()
             self.children[1].image = self.style.icons.vertical
-           layout.vertical()
+            layout.vertical()
         end
+        
+        -- todo: finish
+        local ttp = {wibox = wibox({type = "tooltip"}), tip = nil}
+        local tb = wibox.widget.textbox()
+        tb:set_align("center")
 
-        local w_tooltip = tooltip({text = (type(toolTipString) == "function" and toolTipString()) or tostring(toolTipString)})
-        w_tooltip.bg = beautilful.bg_normal
+        ttp.widget = tb
+        ttp.wibox:set_widget(tb)
+        tb:set_font(style.tooltip.font)
 
-        w_tooltip:add_to_object(TREES.widget)
-
-        TREES.widget:connect_signal("mouse::enter", function()
-            w_tooltip.text = (type(toolTipString) == "function" and toolTipString()) or tostring(toolTipString)
-        end)
+        ttp.wibox.visible = false
+        ttp.wibox.ontop = true
+        ttp.wibox.border_width = style.tooltip.border_width
+        ttp.wibox.border_color = style.tooltip.color.border
+        ttp.wibox.shape = style.tooltip.shape
+        ttp.wibox:set_bg(style.tooltip.color.wibox)
+        ttp.wibox:set_fg(style.tooltip.color.text)
 
         TREES.widget:buttons(buttons)
 
