@@ -14,14 +14,14 @@ local button = require("awful.button")
 local direction_indicator = {mt = {}}
 
 -- Default style
-local l_style = {
+local defaultStyle = {
     icons = {
         horizontal = gears.filesystem.get_configuration_dir() .. TREES.relative_path .. "horizontal_icon.svg",
         vertical = gears.filesystem.get_configuration_dir() .. TREES.relative_path .. "vertical_icon.svg",
     },
 }
 -- Gets merged with beautilful configs as first overwrite.
-l_style = util.mergeTables(l_style, beautilful["binaryTreeLayoutWidget"] or {})
+defaultStyle = util.mergeTables(l_style, beautilful["binaryTreeLayoutWidget"] or {})
 
 --[[
     Method used to generate string which the tooltip text get set to.
@@ -49,7 +49,7 @@ end))
 ]]
 function direction_indicator.new(args)
     args = args or {}
-    local style = util.mergeTables(l_style, args.style or {})
+    local style = util.mergeTables(defaultStyle, args.style or {})
     local toolTipString = args.toolTipString or l_toolTipString
     local buttons = gears.table.join(l_buttons, args.buttons or {})
 
@@ -78,7 +78,7 @@ function direction_indicator.new(args)
 
         function TREES.widget:vertical()
             self.children[1].image = self.style.icons.vertical
-            layout.vertical()
+           layout.vertical()
         end
 
         local w_tooltip = tooltip({text = (type(toolTipString) == "function" and toolTipString()) or tostring(toolTipString)})
