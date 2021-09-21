@@ -255,15 +255,14 @@ function binaryTreeBuilder.build(args)
     local is_vertical = direction == "up" or direction == "down"
     local right_or_down = direction == "down" or direction == "right"
 
-    if direction == "up" or direction == "left" then
-      amount = amount * -1
-    end
+    if direction == "up" or direction == "left" then amount = amount * -1 end
 
     local client_node = tree.root:find(client)
     local node = layout.getNodeByPullDirection(client_node, right_or_down, is_vertical)
 
     if node then
-      node.split = util.clamp(node.split + amount, 0 + node.workarea.gap, 1 - node.workarea.gap)
+      local bound = node.workarea.gap / node.workarea[is_vertical and "height" or "width"]
+      node.split = util.clamp(node.split + amount, bound, 1 - bound)
       node:updateClients(false)
     end
   end
