@@ -5,7 +5,7 @@
 -- All a tree needs to do is just have a root attribute to be considered a tree of this.
 --
 ------------------------------------------------------------------------------------------
-local util = require(TREES.relative_path.. "util")
+local util = require(TREES.relative_path .. "util")
 
 local node = {}
 -- Not 100% sure why this works but it prevents certain null pointer exceptions from occuring.
@@ -21,16 +21,8 @@ node.__index = node
     @return: Node
 ]]
 function node.new(data, left, right, parent)
-    local newNode = {
-        data = data,
-        left = left,
-        right = right,
-        parent = parent,
-        split = 0.5,
-        is_vertical = false,
-        id = util.uuid()
-    }
-    return setmetatable(newNode, node)
+  local newNode = {data = data, left = left, right = right, parent = parent, split = 0.5, is_vertical = false, id = util.uuid()}
+  return setmetatable(newNode, node)
 end
 
 --[[
@@ -40,11 +32,11 @@ end
     @return: The refereced set child node.
 ]]
 function node:addLeft(child)
-    if self ~= nil then
-        self.left = child
-        child.parent = self
-        return self.left
-    end
+  if self ~= nil then
+    self.left = child
+    child.parent = self
+    return self.left
+  end
 end
 
 --[[
@@ -54,11 +46,11 @@ end
     @return: The refereced set child node.
 ]]
 function node:addRight(child)
-    if self ~= nil then
-        self.right = child
-        child.parent = self
-        return self.right
-    end
+  if self ~= nil then
+    self.right = child
+    child.parent = self
+    return self.right
+  end
 end
 
 --[[
@@ -68,31 +60,29 @@ end
     @param client: The client to match the data for.
 ]]
 function node:removeLeaf(client)
-    if self.left then
-        if self.left.data == client then
-            local newSelf = util.shallowCopy(self.right)
-            self.data = newSelf.data
-            self.left = newSelf.left
-            self.right = newSelf.right
-            self.is_vertical = newSelf.is_vertical
-        else
-            self.left:removeLeaf(client)
-        end
+  if self.left then
+    if self.left.data == client then
+      local newSelf = util.shallowCopy(self.right)
+      self.data = newSelf.data
+      self.left = newSelf.left
+      self.right = newSelf.right
+      self.is_vertical = newSelf.is_vertical
+    else
+      self.left:removeLeaf(client)
     end
-    if self.right then
-        if self.right.data == client then
-            local newSelf = util.shallowCopy(self.left)
-            self.data = newSelf.data
-            self.left = newSelf.left
-            self.right = newSelf.right
-            self.is_vertical = newSelf.is_vertical
-        else
-            self.right:removeLeaf(client)
-        end
+  end
+  if self.right then
+    if self.right.data == client then
+      local newSelf = util.shallowCopy(self.left)
+      self.data = newSelf.data
+      self.left = newSelf.left
+      self.right = newSelf.right
+      self.is_vertical = newSelf.is_vertical
+    else
+      self.right:removeLeaf(client)
     end
-    if not self.right and not self.left then
-        if self.data == client then self.data = nil end
-    end
+  end
+  if not self.right and not self.left then if self.data == client then self.data = nil end end
 end
 
 --[[
@@ -103,14 +93,14 @@ end
     @return: The node the client is on or nil if it failed to find any.
 ]]
 function node:find(client)
-    if self.data then
-        return self.data == client and self or nil
-    else
-        local obj = nil
-        if self.left then obj = self.left:find(client) end
-        if self.right then obj = obj or self.right:find(client) or nil end
-        return obj
-    end
+  if self.data then
+    return self.data == client and self or nil
+  else
+    local obj = nil
+    if self.left then obj = self.left:find(client) end
+    if self.right then obj = obj or self.right:find(client) or nil end
+    return obj
+  end
 end
 
 --[[
@@ -121,24 +111,15 @@ end
     @param prefix: String prefix before the word Node is printed. Will only display for root node as it gets overwritten for the left and right.
 ]]
 function node.print(node, level, prefix)
-    level = level or 0
-    prefix = prefix or ""
+  level = level or 0
+  prefix = prefix or ""
 
-    if type(node) == "table" then
-        print(string.rep(" ", level) .. prefix .. "Node:")
-        for k, v in pairs(node) do
-            if k ~= "left" and k ~= "right" then
-                print(string.rep(" ", level + 1) .. tostring(k) .. ": " ..
-                          tostring(v))
-            end
-        end
-        if node.left ~= nil and type(node.left) == "table" then
-            node.print(node.left, level + 1, "L_")
-        end
-        if node.right ~= nil and type(node.right) == "table" then
-            node.print(node.right, level + 1, "R_")
-        end
-    end
+  if type(node) == "table" then
+    print(string.rep(" ", level) .. prefix .. "Node:")
+    for k, v in pairs(node) do if k ~= "left" and k ~= "right" then print(string.rep(" ", level + 1) .. tostring(k) .. ": " .. tostring(v)) end end
+    if node.left ~= nil and type(node.left) == "table" then node.print(node.left, level + 1, "L_") end
+    if node.right ~= nil and type(node.right) == "table" then node.print(node.right, level + 1, "R_") end
+  end
 end
 
 return node
