@@ -10,6 +10,7 @@ TREES = TREES or {}
 local gears = require("gears")
 local awful = require("awful")
 local naughty = require("naughty")
+local beautiful = require("beautiful")
 
 -- Since I dont know where you will put this folder I attempt to get the relative location of file in order to import files within the correct folder.
 -- Basically I need a relative from this file and this is the easy method of getting that path that I managed to find.
@@ -37,17 +38,20 @@ local binaryTreeBuilder = {mt = {}}
 
   @param andChildren: update children nodes as well.
 ]]
-function binaryTreeNode:updateClients(andChildren)
+function binaryTreeNode:updateClients(args)
+  args = args or {}
   local workarea = self.workarea
   local split = self.split
-  andChildren = andChildren or true
+  local andChildren = args.andChildren or true
+  local respect_client_borders = args.respect_client_borders or false
 
   if self.data then
     local client = self.data
-    client.x = workarea.x
-    client.y = workarea.y
-    client.width = workarea.width
-    client.height = workarea.height
+    local border_width = (respect_client_borders and client.border_width) or beautiful.border_width or 0
+    client.x = workarea.x + (not respect_client_borders and border_width or 0)
+    client.y = workarea.y + (not respect_client_borders and border_width or 0)
+    client.width = workarea.width - (border_width * 2)
+    client.height = workarea.height - (border_width * 2)
   else
     if andChildren then
       local leftArea = util.shallowCopy(workarea)
@@ -67,12 +71,12 @@ function binaryTreeNode:updateClients(andChildren)
       -- While not needed, these fail safes are there to prevent an empty child from updating.
       if self.left then
         self.left.workarea = leftArea
-        self.left:updateClients()
+        self.left:updateClients(args)
       end
 
       if self.right then
         self.right.workarea = rightArea
-        self.right:updateClients()
+        self.right:updateClients(args)
       end
     end
   end
@@ -115,7 +119,9 @@ function binaryTreeBuilder.toggleNodeDirection(client)
 end
 
 -- Default config settings for the builder.
-local configs = {name = "binaryTreeLayout", start_vertical = false, send_notifications = false, debug = false}
+local function configs()
+  return {name = "binaryTreeLayout", start_vertical = false, send_notifications = false, debug = false, respect_client_borders = true}
+end
 
 --[[
   Builds the layout.
@@ -125,9 +131,12 @@ local configs = {name = "binaryTreeLayout", start_vertical = false, send_notific
 
   @param start_vertical: Starting point of the first split. Default false.
   @param name: Name of the returned layout. Never alter this unless you know what you are doing.
+  @param send_notifications: If set to true a message will be displayed whenever the layout direction changes.
+  @param debug: Prints debug messages into the console.
+  @param respect_client_borders: If set to true the layout will apply a border from client.border_width I.E. the clients actual border. If false it will use the border_width set in beautiful instead.
 ]]
 function binaryTreeBuilder.build(args)
-  args = util.mergeTables(configs, args or {})
+  args = util.mergeTables(configs() or {}, args or {})
   BINARY_TREE_LAYOUT_GO_VERTICAL = args.start_vertical or BINARY_TREE_LAYOUT_GO_VERTICAL or false
   TREES.send_notifications = args.send_vertical
   TREES.debug_mode = args.debug
@@ -213,7 +222,7 @@ function binaryTreeBuilder.build(args)
 
     -- set clients to match size in node.
     tree.root.workarea = workarea
-    tree.root:updateClients(true)
+    tree.root:updateClients({andChildren = true, respect_client_borders = args.respect_client_borders})
 
     -- Debug. Prints tree's content to stdout
     if TREES.debug_mode then tree.root.print(tree.root) end
@@ -265,7 +274,7 @@ function binaryTreeBuilder.build(args)
     if node then
       local bound = node.workarea.gap / node.workarea[is_vertical and "height" or "width"]
       node.split = util.clamp(node.split + amount, bound, 1 - bound)
-      node:updateClients(false)
+      node:updateClients({andChildren = false, respect_client_borders = args.respect_client_borders})
     end
   end
 
@@ -319,12 +328,12 @@ function binaryTreeBuilder.build(args)
 
           if horizontal then
             horizontal.split = layout.clampSplit(_mouse, horizontal.workarea, false)
-            horizontal:updateClients(false)
+            horizontal:updateClients({andChildren = false, respect_client_borders = args.respect_client_borders})
           end
 
           if vertical then
             vertical.split = layout.clampSplit(_mouse, vertical.workarea, true)
-            vertical:updateClients(false)
+            vertical:updateClients({andChildren = false, respect_client_borders = args.respect_client_borders})
           end
 
           -- setup to be an infinate loop as long as the button is held down.
