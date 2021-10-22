@@ -44,11 +44,10 @@ function binaryTreeNode:updateClients(andChildren)
 
   if self.data then
     local client = self.data
-    -- I wish this could be a single method call. Message me if this is a thing.
-    client.x = workarea.x + workarea.gap
-    client.y = workarea.y + workarea.gap
-    client.width = math.max(workarea.width - (workarea.gap * 2), 1)
-    client.height = math.max(workarea.height - (workarea.gap * 2), 1)
+    client.x = workarea.x
+    client.y = workarea.y
+    client.width = workarea.width
+    client.height = workarea.height
   else
     if andChildren then
       local leftArea = util.shallowCopy(workarea)
@@ -61,6 +60,9 @@ function binaryTreeNode:updateClients(andChildren)
       leftArea[t.s] = workarea[t.s] * split
       rightArea[t.s] = workarea[t.s] * (1 - split)
       rightArea[t.d] = workarea[t.d] + (workarea[t.s] * split)
+
+      -- This is what handles the usless gap. In order to stop shifting to the right with too many windows only the left size gets shrunk the full amount rather then the right side.
+      leftArea[t.s] = leftArea[t.s] - workarea.gap
 
       -- While not needed, these fail safes are there to prevent an empty child from updating.
       if self.left then
