@@ -7,21 +7,17 @@ TREES = TREES or {}
 
 -- Imports.
 ------------------------------------------------------------------------------------------
-local gears = require("gears")
 local awful = require("awful")
 local naughty = require("naughty")
 local beautiful = require("beautiful")
+local gtable = require("gears.table")
 
 -- Since I dont know where you will put this folder I attempt to get the relative location of file in order to import files within the correct folder.
 -- Basically I need a relative from this file and this is the easy method of getting that path that I managed to find.
-if not TREES.relative_path then
-  local root_path = debug.getinfo(1).source:match("@(.*/)")
-  local config_path = gears.filesystem.get_configuration_dir()
-  TREES.relative_path = (root_path:sub(0, #config_path) == config_path) and root_path:sub(#config_path + 1) or root_path
-end
+if not TREES.relative_path then TREES.relative_path = (...):match(".*") end
 
-local util = require(TREES.relative_path .. "util")
-local binaryTreeNode = require(TREES.relative_path .. "bidirectionalBinaryTreeNode")
+local util = require(TREES.relative_path .. ".util")
+local node = require(TREES.relative_path .. ".node")
 
 -- Global imports. Also keeps the intelesense complaining to one location.
 ------------------------------------------------------------------------------------------
@@ -38,7 +34,7 @@ local binaryTreeBuilder = {mt = {}}
 
   @param andChildren: update children nodes as well.
 ]]
-function binaryTreeNode:updateClients(args)
+function node:updateClients(args)
   args = args or {}
   local workarea = self.workarea
   local split = self.split
@@ -136,7 +132,7 @@ end
   @param respect_client_borders: If set to true the layout will apply a border from client.border_width I.E. the clients actual border. If false it will use the border_width set in beautiful instead.
 ]]
 function binaryTreeBuilder.build(args)
-  args = util.mergeTables(configs() or {}, args or {})
+  args = gtable.merge(configs() or {}, args or {})
   BINARY_TREE_LAYOUT_GO_VERTICAL = args.start_vertical or BINARY_TREE_LAYOUT_GO_VERTICAL or false
   TREES.send_notifications = args.send_vertical
   TREES.debug_mode = args.debug
@@ -159,7 +155,7 @@ function binaryTreeBuilder.build(args)
     local tag = tostring(p.tag or capi.screen[p.screen].selected_tag or awful.tag.selected(capi.mouse.screen))
 
     -- Insures that the tree exists in tag.
-    if TREES[tag] == nil then TREES[tag] = {root = binaryTreeNode.new(), clients = {}} end
+    if TREES[tag] == nil then TREES[tag] = {root = node.new(), clients = {}} end
     -- Gets the tree.
     local tree = TREES[tag]
 
@@ -179,8 +175,8 @@ function binaryTreeBuilder.build(args)
           if baseNode.data then
             local left_client = baseNode.data
 
-            baseNode:addLeft(binaryTreeNode.new(left_client))
-            local newNode = baseNode:addRight(binaryTreeNode.new(newClient))
+            baseNode:addLeft(node.new(left_client))
+            local newNode = baseNode:addRight(node.new(newClient))
 
             baseNode.data = nil
             baseNode.is_vertical = BINARY_TREE_LAYOUT_GO_VERTICAL
