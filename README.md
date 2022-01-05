@@ -74,7 +74,7 @@ With a binary tree some of these limitations are reduced.
 
 For example (using the diagram above), if you want to put a client right under application 1 to be vertical simply set the layout to do a vertical split and create the new client.
 The result will be that area 1 gets cut in half with client 1 being put on top (left) and the new application being put on the bottom split (right).
-Furthermore, if you want to increase the size of client 2 area start a resize event (mouse drag or keyboard keys (wip)) and drag in the way you want to increase.
+Furthermore, if you want to increase the size of client 2 area start a resize event (mouse drag or keyboard keys) and drag in the way you want to increase.
 All the other splits will adjust to respect the new sizes while maintaining the position of the split.
 
 ## Wait Where Did I Hear / See This Before?
