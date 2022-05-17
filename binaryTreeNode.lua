@@ -6,15 +6,21 @@
 --------------------------------------------------
 local gTable = require "gears.table"
 
+local relPath = (...):match "(.*).binaryTreeNode"
+local utils   = require(relPath .. ".utils")
+
 --------------------------------------------------
 ---@class Node
 local M = {
+    id         = nil,
     parent     = nil,
     left       = nil,
     right      = nil,
     data       = nil,
     isVertical = false,
-    split      = 0.5,
+    workarea   = {
+        split = 0.5,
+    },
     mt         = {},
 }
 M.__index = M
@@ -66,12 +72,13 @@ function M:new(args)
 
     ---@type Node
     local node = {
+        id         = args.id or utils.uuid(),
         left       = args.left,
         right      = args.right,
         parent     = args.parent,
         data       = args.data,
         isVertical = args.isVertical or false,
-        split      = args.split or 0.5,
+        workarea   = args.workarea or { split = 0.5 },
     }
     node.__index = node
     gTable.crush(node, self, true)
@@ -80,6 +87,9 @@ function M:new(args)
 end
 
 --------------------------------------------------
+---Metatable call.
+---@param ... unknown
+---@return Node
 function M.mt:__call(...)
     return M:new(...)
 end
@@ -87,9 +97,19 @@ end
 return setmetatable(M, M.mt)
 --------------------------------------------------
 ---@class Node #The node object for the tree.
+---@field id any #The ID of the node. Note it is only generated on calling new.
 ---@field parent? Node #The parent node.
 ---@field left? Node #The left node.
 ---@field right? Node #The right node.
 ---@field data? any #The nodes data.
 ---@field isVertical? boolean #Determines if the node is vertical or not.
----@filed split? number #The decimal percent amount where a split occurs.
+---@field workarea? Workarea #Workarea for the node.
+
+
+---@class Workarea #The workarea the nodes used. Similar to Awesome's workarea but with a gap.
+---@field x number #X position.
+---@field y number #Y position.
+---@field width number #Width.
+---@field height number #Height.
+---@field gap number #The gap between everything.
+---@field split number #Where the split occurs.
