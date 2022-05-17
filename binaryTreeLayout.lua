@@ -132,7 +132,7 @@ end
 
 ---Changes the direction of parent node the current client is on.
 ---@param c any #The client to use.
----@param isVertical boolean? #Should the node be vertical will just toggle the not specified or not a boolean.
+---@param isVertical? boolean #Should the node be vertical will just toggle the not specified or not a boolean.
 function M:changeDirection(c, isVertical)
     local dir
 
@@ -146,7 +146,7 @@ function M:changeDirection(c, isVertical)
         return
     end
 
-    local node = tree:find(c or awful.client.focus.history.get(capi.mouse.screen, 1)).parent
+    local node = tree:find(c).parent
 
     if not node then
         return
