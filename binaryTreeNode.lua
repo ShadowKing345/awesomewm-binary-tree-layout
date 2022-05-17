@@ -14,6 +14,7 @@ local M = {
     right      = nil,
     data       = nil,
     isVertical = false,
+    split      = 0.5,
     mt         = {},
 }
 M.__index = M
@@ -52,21 +53,9 @@ function M:find(data)
         return self
     end
 
-    if self.left then
-        local result = self.left:find(data)
-        if result then
-            return result
-        end
-    end
+    local result = (self.left and self.left:find(data)) or (self.right and self.right:find(data))
 
-    if self.right then
-        local result = self.right:find(data)
-        if result then
-            return result
-        end
-    end
-
-    return nil
+    return result and result or nil
 end
 
 ---Creates a new Node object
@@ -82,6 +71,7 @@ function M:new(args)
         parent     = args.parent,
         data       = args.data,
         isVertical = args.isVertical or false,
+        split      = args.split or 0.5,
     }
     node.__index = node
     gTable.crush(node, self, true)
@@ -102,3 +92,4 @@ return setmetatable(M, M.mt)
 ---@field right? Node #The right node.
 ---@field data? any #The nodes data.
 ---@field isVertical? boolean #Determines if the node is vertical or not.
+---@filed split? number #The decimal percent amount where a split occurs.
