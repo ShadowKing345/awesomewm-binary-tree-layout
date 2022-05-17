@@ -22,8 +22,8 @@ local M = {
 ---@param data any
 ---@return Node|nil
 function M:find(data)
-    if M.root then
-        return M.root:find(data)
+    if self.root then
+        return self.root:find(data)
     end
     return nil
 end
@@ -31,6 +31,37 @@ end
 ---Removes a node with the given data.
 ---@param data any
 function M:remove(data)
+    local n = self.root:find(data)
+
+    if not n then
+        return
+    end
+
+    if n == self.root then
+        n.data = nil
+        return
+    end
+
+    local parent = n.parent
+    if not parent then
+        print "How did you just remove a node without a parent that is not root?"
+        return
+    end
+
+    local isLeft = parent.left.data == data
+
+    print(isLeft)
+
+    local n2 = isLeft and parent.right or parent.left
+
+    if not n2 then
+        return
+    end
+
+    parent.left = n2.left
+    parent.right = n2.right
+    parent.data = n2.data
+    parent.isVertical = n2.isVertical
 
 end
 
