@@ -4,13 +4,13 @@
 
 --]]
 --------------------------------------------------
-local awful = require "awful"
+local awful  = require "awful"
 local gTable = require "gears.table"
-local capi = { client = client, screen = screen, mouse = mouse, mousegrabber = mousegrabber }
+local capi   = { client = client, screen = screen, mouse = mouse, mousegrabber = mousegrabber }
 
-local relPath = (...):match "(.*).binaryTreeLayout"
+local relPath    = (...):match "(.*).binaryTreeLayout"
 local binaryTree = require(relPath .. ".binaryTree")
-local utils = require(relPath .. ".utils")
+local utils      = require(relPath .. ".utils")
 
 --------------------------------------------------
 ---@class BinaryTreeLayout
@@ -18,15 +18,20 @@ local M = {
     name       = "binaryTreeLayout",
     trees      = {},
     isVertical = false,
+    split      = 0.5,
     mt         = {},
 }
 
 ---Updates all the information for the clients based on where they are in the tree.
 ---@param node Node #Node object.
----@param workarea any #Workarea and gap
+---@param workarea? Workarea #Workarea and gap
 function M.updateClientGeometry(node, workarea)
+    workarea = workarea or node.workarea
+    if not workarea then
+        return
+    end
     local isVertical = node.isVertical
-    local splitSize  = (isVertical and workarea.height or workarea.width) * node.split
+    node.workarea    = workarea
 
     if node.data then
         node.data:geometry {
@@ -44,43 +49,128 @@ function M.updateClientGeometry(node, workarea)
             size = "width",
         }
 
-        local gap = workarea.gap / 2
+        local split       = utils.clamp(workarea[dir.size] * workarea.split, 1, workarea[dir.size])
+        local gap         = workarea.gap / 2
         local newWorkarea = gTable.clone(workarea)
 
-        newWorkarea[dir.size] = splitSize
+        newWorkarea[dir.size] = split
 
         if node.left then
-            newWorkarea[dir.size] = newWorkarea[dir.size] - gap
+            newWorkarea[dir.size] = utils.clamp(newWorkarea[dir.size] - gap, 1, workarea[dir.size])
             M.updateClientGeometry(node.left, newWorkarea)
         end
 
         if node.right then
-            newWorkarea[dir.pos] = newWorkarea[dir.pos] + splitSize + gap
+            newWorkarea[dir.pos]  = newWorkarea[dir.pos] + split + gap
+            newWorkarea[dir.size] = workarea[dir.size] - newWorkarea[dir.size]
             M.updateClientGeometry(node.right, newWorkarea)
         end
     end
 end
 
+---Gets the node adjacent to the starting node by the direction.
+---@param startingNode Node #Starting Node
+---@param right boolean #Is the node the "right side" node of the tree. As in is it right.
+---@param is_vertical boolean #Is the node vertical.
+---@return Node|nil
+function M.getNodeByDirection(startingNode, right, is_vertical)
+    local node = startingNode
+    local prevNode
+
+    repeat
+        prevNode = node
+        node = node.parent
+    until not node or
+        ((right and node.left.id == prevNode.id or not right and node.right.id == prevNode.id)
+            and node.isVertical == is_vertical)
+
+    return node
+end
+
+---Clamps down the value of the split
+---@param mouse any #Mouse coords.
+---@param workarea Workarea #The workarea for the parent node.
+---@param rootWorkarea Workarea #The root or furthest most workarea. Basically screen workarea.
+---@param isVertical boolean #Changes if the calculation uses vertical variables.
+---@return number
+function M.clampSplit(mouse, workarea, rootWorkarea, isVertical)
+    local dir = isVertical and {
+        pos = "y",
+        size = "height",
+    } or {
+        pos = "x",
+        size = "width",
+    }
+
+    local amount = utils.clamp(mouse[dir.pos], rootWorkarea[dir.pos], rootWorkarea[dir.size])
+    amount = utils.clamp(amount, workarea[dir.pos], workarea[dir.size])
+
+    return amount / workarea[dir.size]
+end
+
+---Generates a tag.
+---@param p? any #Layout properties.
+---@return string
+function M._genTag(p)
+    return tostring(p and (p.tag or capi.screen[p.screen].selected_tag) or awful.tag.selected(capi.mouse.screen))
+end
+
+---Changes the direction for the next split to be vertical.
 function M:vertical()
     self.isVertical = true
 end
 
+---Changes the direction for the next split to be horizontal.
 function M:horizontal()
     self.isVertical = false
 end
 
+---Toggles the direction for the next split.
 function M:toggle()
     self.isVertical = not self.isVertical
+end
+
+---Changes the direction of parent node the current client is on.
+---@param c any #The client to use.
+---@param isVertical boolean? #Should the node be vertical will just toggle the not specified or not a boolean.
+function M:changeDirection(c, isVertical)
+    local dir
+
+    if type(isVertical) == "boolean" then
+        dir = isVertical
+    end
+
+    local tree = self.trees[self._genTag()]
+
+    if not tree then
+        return
+    end
+
+    local node = tree:find(c or awful.client.focus.history.get(capi.mouse.screen, 1)).parent
+
+    if not node then
+        return
+    end
+
+    if dir ~= nil then
+        node.isVertical = dir
+    else
+        node.isVertical = not node.isVertical
+    end
+
+    M.updateClientGeometry(node)
 end
 
 ---Method used to arrange the clients.
 ---@param p any
 function M.arrange(p)
     local self     = M
+    ---@type Workarea
     local workarea = gTable.clone(p.workarea)
     workarea.gap   = p.useless_gap or 0
+    workarea.split = self.split or 0.5
 
-    local tag = tostring(p.tag or capi.screen[p.screen].selected_tag or awful.tag.selected(capi.mouse.screen))
+    local tag = self._genTag(p)
 
     if self.trees[tag] == nil then
         self.trees[tag] = binaryTree()
@@ -146,16 +236,69 @@ end
 ---@param amount number #The amount to resize by.
 ---@param direction any #Which direction to resize.
 function M.resize(client, amount, direction)
-    print(utils.toJson(client, true), utils.toJson(amount, true), utils.toJson(direction, true))
+    if not (client and (amount and amount > 0)) then return end
+    direction = direction or "rigth"
+
+    local self = M
+    local tree = self.trees[tostring(capi.screen[client.screen].selected_tag or awful.tag.selected(capi.mouse.screen))]
+
+    local isVertical = direction == "up" or direction == "down"
+    local rightOrDown = direction == "down" or direction == "right"
+
+    if direction == "up" or direction == "left" then amount = amount * -1 end
+
+    local client_node = tree.root:find(client)
+    local node = self.getNodeByDirection(client_node, rightOrDown, isVertical).parent
+
+    if node then
+        node.workarea.split = amount
+        self.updateClientGeometry(node)
+    end
 end
 
-function M.mouse_resize_handler(client, corner, x, y)
-    print(utils.toJson(client, true), utils.toJson(corner, true), utils.toJson(x, true), utils.toJson(y, true))
+---Alteres the split amounts with the mouse drag event.
+---@param client any #The client
+---@param corner string #The corner direction.
+function M.mouse_resize_handler(client, corner)
+    local self = M
+    local tree = self.trees[self._genTag()]
+
+    local isBottom = corner:match "[^_]+" == "bottom"
+    local isRight  = corner:match "([^_]+)$" == "right"
+
+    local clientNode = tree.root:find(client)
+    local horizontal = self.getNodeByDirection(clientNode, isRight, false)
+    local vertical   = self.getNodeByDirection(clientNode, isBottom, true)
+
+    local prev_coords = {}
+    capi.mousegrabber.run(function(mouse)
+        for _, button in ipairs(mouse.buttons) do
+            if button then
+                prev_coords = { x = mouse.x, y = mouse.y }
+
+                if horizontal then
+                    horizontal.workarea.split = self.clampSplit(mouse, horizontal.workarea, tree.root.workarea, false)
+                    self.updateClientGeometry(horizontal)
+                end
+
+                if vertical then
+                    vertical.workarea.split = self.clampSplit(mouse, vertical.workarea, tree.root.workarea, true)
+                    self.updateClientGeometry(vertical)
+                end
+
+                -- setup to be an infinate loop as long as the button is held down.
+                return true
+            end
+        end
+
+        -- check to exit the loop once the button is no longer held down and the mouse moves a bit.
+        return prev_coords.x == mouse.x and prev_coords.y == mouse.y
+    end, "cross")
 end
 
 ---Creates a new Binary Tree Layout instance.
 ---@param args any
----@return table
+---@return BinaryTreeLayout
 function M:new(args)
     args = args or {}
 
@@ -171,6 +314,9 @@ function M:new(args)
 end
 
 --------------------------------------------------
+---Metatable call.
+---@param ... unknown
+---@return BinaryTreeLayout
 function M.mt:__call(...)
     return M:new(...)
 end
@@ -181,3 +327,4 @@ return setmetatable(M, M.mt)
 ---@field trees table<string, Tree> #Collection of trees.
 ---@field name string #The name of that will be told to AwesomeWM layout system.
 ---@field isVertical boolean #Controls if the next node will be vertical or not.
+---@field split number #Default split amount.
