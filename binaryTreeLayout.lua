@@ -25,7 +25,9 @@ local M = {
 ---@param node Node #Node object.
 ---@param workarea any #Workarea and gap
 function M.updateClientGeometry(node, workarea)
-    local splitSize = node.isVertical and workarea.height / 2 or workarea.width / 2
+    local isVertical = node.isVertical
+    local splitSize  = (isVertical and workarea.height or workarea.width) * node.split
+
     if node.data then
         node.data:geometry {
             x      = workarea.x,
@@ -34,36 +36,32 @@ function M.updateClientGeometry(node, workarea)
             height = workarea.height,
         }
     else
+        local dir = isVertical and {
+            pos  = "y",
+            size = "height",
+        } or {
+            pos  = "x",
+            size = "width",
+        }
+
         local gap = workarea.gap / 2
         local newWorkarea = gTable.clone(workarea)
 
-        if node.isVertical then
-            newWorkarea.height = splitSize
-        else
-            newWorkarea.width = splitSize
-        end
+        newWorkarea[dir.size] = splitSize
 
         if node.left then
-            if node.isVertical then
-                newWorkarea.height = newWorkarea.height - gap
-            else
-                newWorkarea.width = newWorkarea.width - gap
-            end
+            newWorkarea[dir.size] = newWorkarea[dir.size] - gap
             M.updateClientGeometry(node.left, newWorkarea)
         end
 
         if node.right then
-            if node.isVertical then
-                newWorkarea.y = newWorkarea.y + splitSize + gap
-            else
-                newWorkarea.x = newWorkarea.x + splitSize + gap
-            end
+            newWorkarea[dir.pos] = newWorkarea[dir.pos] + splitSize + gap
             M.updateClientGeometry(node.right, newWorkarea)
         end
     end
 end
 
-function M:isVertical()
+function M:vertical()
     self.isVertical = true
 end
 
@@ -102,34 +100,40 @@ function M.arrange(p)
                 if baseNode.data then
                     local leftClient = baseNode.data
 
-                    baseNode:addLeft(binaryTree.newNode { data = leftClient, isVertical = self.isVertical })
-                    local newNode = baseNode:addRight(binaryTree.newNode {
-                        data = newClient,
-                        isVertical = self.isVertical,
-                    })
-
                     baseNode.data = nil
-                    baseNode = newNode
+                    baseNode.isVertical = self.isVertical
+
+                    baseNode:addLeft(binaryTree.newNode { data = leftClient })
+                    baseNode = baseNode:addRight(binaryTree.newNode { data = newClient })
                 else
                     baseNode.data = newClient
                 end
             end
-        elseif changed < 0 then
+        else
             difference = utils.table.tableDiff(tree.clients, p.clients)
             for _, client in ipairs(difference) do
                 tree:remove(client)
             end
-        else
-            local firstClient  = p.clients[difference[1]]
-            local secondClient = p.clients[difference[2]]
-
-            local firstNode  = tree:find(firstClient)
-            local secondNode = tree:find(secondClient)
-
-            firstNode.data  = secondClient
-            secondNode.data = firstClient
         end
     else
+        local difference = utils.table.tableDiffIndex(p.clients, tree.clients)
+
+        if #difference < 1 then
+            return
+        end
+
+        local firstClient  = p.clients[difference[1]]
+        local secondClient = p.clients[difference[2]]
+
+        local firstNode  = tree:find(firstClient)
+        local secondNode = tree:find(secondClient)
+
+        if not (firstNode and secondNode) then
+            return
+        end
+
+        firstNode.data  = secondClient
+        secondNode.data = firstClient
     end
 
     tree.clients = p.clients
