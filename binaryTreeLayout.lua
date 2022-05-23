@@ -1,6 +1,7 @@
 --[[
 
     Binary Tree Layout.
+    The actual AwesomeWM layout object(?).
 
 --]]
 --------------------------------------------------
@@ -73,7 +74,7 @@ end
 ---@param startingNode Node #Starting Node
 ---@param direction string #The direction to get the node from.
 ---@return Node|nil
-function M.getNodeByDirection(startingNode, direction)
+function M._getNodeByDirection(startingNode, direction)
     local isVertical = direction == "up" or direction == "down"
     local right = direction == "down" or direction == "right"
     local node = startingNode
@@ -83,9 +84,8 @@ function M.getNodeByDirection(startingNode, direction)
         prevNode = node
         node = node.parent
     until not node
-        or (right and node.left.id == prevNode.id or not right and node.right.id == prevNode.id)
+        or (right and node.left == prevNode or not right and node.right == prevNode)
         and node.isVertical == isVertical
-
 
     return node
 end
@@ -209,9 +209,11 @@ function M.arrange(p)
             end
         else
             difference = utils.table.tableDiff(tree.clients, p.clients)
-            for _, client in ipairs(difference) do
-                tree:remove(client)
+            for _, c in ipairs(difference) do
+                tree:remove(c)
             end
+
+            print(utils.toJson(tree.root, true))
         end
     else
         local difference = utils.table.tableDiffIndex(p.clients, tree.clients)
@@ -253,7 +255,7 @@ function M.resize(client, amount, direction)
     if direction == "up" or direction == "left" then amount = amount * -1 end
 
     local client_node = tree.root:find(client)
-    local node = self.getNodeByDirection(client_node, direction).parent
+    local node = self._getNodeByDirection(client_node, direction).parent
 
     if node then
         node.workarea.split = amount
@@ -272,8 +274,8 @@ function M.mouse_resize_handler(client, corner)
     local horizontal = corner:match "([^_]+)$"
 
     local clientNode     = tree.root:find(client)
-    local horizontalNode = self.getNodeByDirection(clientNode, horizontal)
-    local verticalNode   = self.getNodeByDirection(clientNode, vertical)
+    local horizontalNode = self._getNodeByDirection(clientNode, horizontal)
+    local verticalNode   = self._getNodeByDirection(clientNode, vertical)
 
     local workarea = tree.root.workarea
     local prev_coords = {}
