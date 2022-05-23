@@ -1,3 +1,3 @@
 [submodule "utils"]
 	path = utils
-	url = git@github.com:ShadowKing345/awesome-utils.git
+	url = https://github.com/ShadowKing345/awesome-utils.git
