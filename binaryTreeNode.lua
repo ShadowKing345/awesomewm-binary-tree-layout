@@ -1,6 +1,7 @@
 --[[
 
     A node for the binary tree.
+    This containes a majority of the functions and information to manage the client data.
 
 --]]
 --------------------------------------------------
