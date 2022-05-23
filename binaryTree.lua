@@ -31,38 +31,26 @@ end
 ---Removes a node with the given data.
 ---@param data any
 function M:remove(data)
-    local n = self.root:find(data)
+    local n = self.root:find(data).parent
 
     if not n then
+        self.root.data = nil
         return
     end
 
-    if n == self.root then
-        n.data = nil
-        return
+    local isLeft = n.left.data == data
+    local childNode = isLeft and n.right or n.left
+
+    n[isLeft and "left" or "right"] = nil
+    if childNode then
+        if childNode.data then
+            n.data  = childNode.data
+            n.right = nil
+        else
+            n.right = childNode.right
+            n.left  = childNode.left
+        end
     end
-
-    local parent = n.parent
-    if not parent then
-        print "How did you just remove a node without a parent that is not root?"
-        return
-    end
-
-    local isLeft = parent.left.data == data
-
-    print(isLeft)
-
-    local n2 = isLeft and parent.right or parent.left
-
-    if not n2 then
-        return
-    end
-
-    parent.left = n2.left
-    parent.right = n2.right
-    parent.data = n2.data
-    parent.isVertical = n2.isVertical
-
 end
 
 ---Creates a new tree instance.
