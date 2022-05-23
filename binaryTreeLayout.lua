@@ -24,9 +24,8 @@ local M = {
 
 ---Updates all the information for the clients based on where they are in the tree.
 ---@param node Node #Node object.
----@param workarea? Workarea #Workarea and gap
-function M.updateClientGeometry(node, workarea)
-    workarea = workarea or node.workarea
+function M.updateGeometry(node)
+    local workarea = node.workarea
     if not workarea then
         return
     end
@@ -57,32 +56,36 @@ function M.updateClientGeometry(node, workarea)
 
         if node.left then
             newWorkarea[dir.size] = utils.clamp(newWorkarea[dir.size] - gap, 1, workarea[dir.size])
-            M.updateClientGeometry(node.left, newWorkarea)
+            node.left.workarea    = newWorkarea
+            M.updateGeometry(node.left)
         end
 
         if node.right then
             newWorkarea[dir.pos]  = newWorkarea[dir.pos] + split + gap
             newWorkarea[dir.size] = workarea[dir.size] - newWorkarea[dir.size]
-            M.updateClientGeometry(node.right, newWorkarea)
+            node.right.workarea   = newWorkarea
+            M.updateGeometry(node.right)
         end
     end
 end
 
 ---Gets the node adjacent to the starting node by the direction.
 ---@param startingNode Node #Starting Node
----@param right boolean #Is the node the "right side" node of the tree. As in is it right.
----@param is_vertical boolean #Is the node vertical.
+---@param direction string #The direction to get the node from.
 ---@return Node|nil
-function M.getNodeByDirection(startingNode, right, is_vertical)
+function M.getNodeByDirection(startingNode, direction)
+    local isVertical = direction == "up" or direction == "down"
+    local right = direction == "down" or direction == "right"
     local node = startingNode
     local prevNode
 
     repeat
         prevNode = node
         node = node.parent
-    until not node or
-        ((right and node.left.id == prevNode.id or not right and node.right.id == prevNode.id)
-            and node.isVertical == is_vertical)
+    until not node
+        or (right and node.left.id == prevNode.id or not right and node.right.id == prevNode.id)
+        and node.isVertical == isVertical
+
 
     return node
 end
@@ -112,7 +115,10 @@ end
 ---@param p? any #Layout properties.
 ---@return string
 function M._genTag(p)
-    return tostring(p and (p.tag or capi.screen[p.screen].selected_tag) or awful.tag.selected(capi.mouse.screen))
+    if p then
+        return tostring(p.tag or capi.screen[p.screen].selected_tag)
+    end
+    return tostring(capi.mouse.screen.selected_tag)
 end
 
 ---Changes the direction for the next split to be vertical.
@@ -158,24 +164,26 @@ function M:changeDirection(c, isVertical)
         node.isVertical = not node.isVertical
     end
 
-    M.updateClientGeometry(node)
+    M.updateGeometry(node)
 end
 
 ---Method used to arrange the clients.
 ---@param p any
 function M.arrange(p)
-    local self     = M
-    ---@type Workarea
-    local workarea = gTable.clone(p.workarea)
-    workarea.gap   = p.useless_gap or 0
-    workarea.split = self.split or 0.5
+    local self = M
 
     local tag = self._genTag(p)
-
-    if self.trees[tag] == nil then
-        self.trees[tag] = binaryTree()
-    end
     local tree = self.trees[tag]
+    if self.trees[tag] == nil then
+        tree = binaryTree()
+
+        ---@type Workarea
+        tree.root.workarea = gTable.clone(p.workarea)
+        tree.root.workarea.gap = p.useless_gap or 0
+        tree.root.workarea.split = self.split or 0.5
+
+        self.trees[tag] = tree
+    end
 
     local changed = #p.clients - (#tree.clients or 0)
     if changed ~= 0 then
@@ -228,7 +236,7 @@ function M.arrange(p)
 
     tree.clients = p.clients
 
-    M.updateClientGeometry(tree.root, workarea)
+    M.updateGeometry(tree.root)
 end
 
 ---Used to resize the clients
@@ -242,17 +250,14 @@ function M.resize(client, amount, direction)
     local self = M
     local tree = self.trees[tostring(capi.screen[client.screen].selected_tag or awful.tag.selected(capi.mouse.screen))]
 
-    local isVertical = direction == "up" or direction == "down"
-    local rightOrDown = direction == "down" or direction == "right"
-
     if direction == "up" or direction == "left" then amount = amount * -1 end
 
     local client_node = tree.root:find(client)
-    local node = self.getNodeByDirection(client_node, rightOrDown, isVertical).parent
+    local node = self.getNodeByDirection(client_node, direction).parent
 
     if node then
         node.workarea.split = amount
-        self.updateClientGeometry(node)
+        self.updateGeometry(node)
     end
 end
 
@@ -263,37 +268,37 @@ function M.mouse_resize_handler(client, corner)
     local self = M
     local tree = self.trees[self._genTag()]
 
-    local isBottom = corner:match "[^_]+" == "bottom"
-    local isRight  = corner:match "([^_]+)$" == "right"
+    local vertical   = corner:match "[^_]+" == "top" and "up" or "down"
+    local horizontal = corner:match "([^_]+)$"
 
-    local clientNode = tree.root:find(client)
-    local horizontal = self.getNodeByDirection(clientNode, isRight, false)
-    local vertical   = self.getNodeByDirection(clientNode, isBottom, true)
+    local clientNode     = tree.root:find(client)
+    local horizontalNode = self.getNodeByDirection(clientNode, horizontal)
+    local verticalNode   = self.getNodeByDirection(clientNode, vertical)
 
+    local workarea = tree.root.workarea
     local prev_coords = {}
-    capi.mousegrabber.run(function(mouse)
-        for _, button in ipairs(mouse.buttons) do
-            if button then
+    capi.mousegrabber.run(
+        function(mouse)
+            if gTable.hasitem(mouse.buttons, true) then
                 prev_coords = { x = mouse.x, y = mouse.y }
 
-                if horizontal then
-                    horizontal.workarea.split = self.clampSplit(mouse, horizontal.workarea, tree.root.workarea, false)
-                    self.updateClientGeometry(horizontal)
+                if horizontalNode then
+                    horizontalNode.workarea.split = self.clampSplit(mouse, horizontalNode.workarea, workarea, false)
+                    self.updateGeometry(horizontalNode)
                 end
 
-                if vertical then
-                    vertical.workarea.split = self.clampSplit(mouse, vertical.workarea, tree.root.workarea, true)
-                    self.updateClientGeometry(vertical)
+                if verticalNode then
+                    verticalNode.workarea.split = self.clampSplit(mouse, verticalNode.workarea, workarea, true)
+                    self.updateGeometry(verticalNode)
                 end
 
-                -- setup to be an infinate loop as long as the button is held down.
                 return true
             end
-        end
 
-        -- check to exit the loop once the button is no longer held down and the mouse moves a bit.
-        return prev_coords.x == mouse.x and prev_coords.y == mouse.y
-    end, "cross")
+            return prev_coords.x == mouse.x and prev_coords.y == mouse.y
+        end,
+        "cross"
+    )
 end
 
 ---Creates a new Binary Tree Layout instance.

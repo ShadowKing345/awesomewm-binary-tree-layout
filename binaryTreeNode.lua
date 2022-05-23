@@ -6,13 +6,9 @@
 --------------------------------------------------
 local gTable = require "gears.table"
 
-local relPath = (...):match "(.*).binaryTreeNode"
-local utils   = require(relPath .. ".utils")
-
 --------------------------------------------------
 ---@class Node
 local M = {
-    id         = nil,
     parent     = nil,
     left       = nil,
     right      = nil,
@@ -72,7 +68,6 @@ function M:new(args)
 
     ---@type Node
     local node = {
-        id         = args.id or utils.uuid(),
         left       = args.left,
         right      = args.right,
         parent     = args.parent,
@@ -97,7 +92,6 @@ end
 return setmetatable(M, M.mt)
 --------------------------------------------------
 ---@class Node #The node object for the tree.
----@field id any #The ID of the node. Note it is only generated on calling new.
 ---@field parent? Node #The parent node.
 ---@field left? Node #The left node.
 ---@field right? Node #The right node.
