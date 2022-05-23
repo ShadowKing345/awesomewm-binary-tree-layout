@@ -1,6 +1,7 @@
 --[[
 
     Binary Tree.
+    Manages the entire tree.
 
 --]]
 --------------------------------------------------
@@ -31,24 +32,30 @@ end
 ---Removes a node with the given data.
 ---@param data any
 function M:remove(data)
-    local n = self.root:find(data).parent
+    local n = self:find(data)
 
     if not n then
-        self.root.data = nil
         return
     end
 
-    local isLeft = n.left.data == data
-    local childNode = isLeft and n.right or n.left
+    n.data = nil
 
-    n[isLeft and "left" or "right"] = nil
-    if childNode then
-        if childNode.data then
-            n.data  = childNode.data
-            n.right = nil
-        else
-            n.right = childNode.right
-            n.left  = childNode.left
+    local parent = n.parent
+    if parent then
+        local childNode = parent[parent.left == n and "right" or "left"]
+        if childNode then
+            parent.data       = childNode.data
+            parent.isVertical = childNode.isVertical
+            parent.left       = nil
+            parent.right      = nil
+
+            if childNode.left then
+                parent:addLeft(childNode.left)
+            end
+
+            if childNode.right then
+                parent:addRight(childNode.right)
+            end
         end
     end
 end
