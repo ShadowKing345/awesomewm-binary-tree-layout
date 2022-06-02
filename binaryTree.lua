@@ -46,6 +46,7 @@ function M:remove(data)
         if childNode then
             parent.data       = childNode.data
             parent.isVertical = childNode.isVertical
+            parent.split      = childNode.split
             parent.left       = nil
             parent.right      = nil
 
