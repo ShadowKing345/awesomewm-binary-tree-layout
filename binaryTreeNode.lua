@@ -15,9 +15,8 @@ local M = {
     right      = nil,
     data       = nil,
     isVertical = false,
-    workarea   = {
-        split = 0.5,
-    },
+    workarea   = nil,
+    split      = 0.5,
     mt         = {},
 }
 M.__index = M
@@ -99,6 +98,7 @@ return setmetatable(M, M.mt)
 ---@field data? any #The nodes data.
 ---@field isVertical? boolean #Determines if the node is vertical or not.
 ---@field workarea? Workarea #Workarea for the node.
+---@field split number #Where the split occurs.
 
 
 ---@class Workarea #The workarea the nodes used. Similar to Awesome's workarea but with a gap.
@@ -107,4 +107,3 @@ return setmetatable(M, M.mt)
 ---@field width number #Width.
 ---@field height number #Height.
 ---@field gap number #The gap between everything.
----@field split number #Where the split occurs.
