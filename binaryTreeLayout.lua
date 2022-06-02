@@ -194,6 +194,7 @@ function M.arrange(p)
 
             local baseNode = prevFocus and tree:find(prevFocus) or tree.root
 
+
             for _, newClient in ipairs(difference) do
                 if baseNode.data then
                     local leftClient = baseNode.data
@@ -212,8 +213,6 @@ function M.arrange(p)
             for _, c in ipairs(difference) do
                 tree:remove(c)
             end
-
-            print(utils.toJson(tree.root, true))
         end
     else
         local difference = utils.table.tableDiffIndex(p.clients, tree.clients)
