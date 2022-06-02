@@ -10,7 +10,9 @@ local gTable = require "gears.table"
 local capi   = { client = client, screen = screen, mouse = mouse, mousegrabber = mousegrabber }
 
 local relPath    = (...):match "(.*).binaryTreeLayout"
+---@module "binaryTree"
 local binaryTree = require(relPath .. ".binaryTree")
+---@module "utils"
 local utils      = require(relPath .. ".utils")
 
 --------------------------------------------------
@@ -27,11 +29,9 @@ local M = {
 ---@param node Node #Node object.
 function M.updateGeometry(node)
     local workarea = node.workarea
-    if not workarea then
-        return
-    end
+    if not workarea then return end
+
     local isVertical = node.isVertical
-    node.workarea    = workarea
 
     if node.data then
         node.data:geometry {
@@ -49,7 +49,7 @@ function M.updateGeometry(node)
             size = "width",
         }
 
-        local split       = utils.clamp(workarea[dir.size] * workarea.split, 1, workarea[dir.size])
+        local split       = utils.clamp(workarea[dir.size] * node.split, 1, workarea[dir.size] - 1)
         local gap         = workarea.gap / 2
         local newWorkarea = gTable.clone(workarea)
 
@@ -57,14 +57,14 @@ function M.updateGeometry(node)
 
         if node.left then
             newWorkarea[dir.size] = utils.clamp(newWorkarea[dir.size] - gap, 1, workarea[dir.size])
-            node.left.workarea    = newWorkarea
+            node.left.workarea    = gTable.clone(newWorkarea)
             M.updateGeometry(node.left)
         end
 
         if node.right then
             newWorkarea[dir.pos]  = newWorkarea[dir.pos] + split + gap
             newWorkarea[dir.size] = workarea[dir.size] - newWorkarea[dir.size]
-            node.right.workarea   = newWorkarea
+            node.right.workarea   = gTable.clone(newWorkarea)
             M.updateGeometry(node.right)
         end
     end
@@ -108,7 +108,7 @@ function M.clampSplit(mouse, workarea, rootWorkarea, isVertical)
     local amount = utils.clamp(mouse[dir.pos], rootWorkarea[dir.pos], rootWorkarea[dir.size])
     amount = utils.clamp(amount, workarea[dir.pos], workarea[dir.size])
 
-    return amount / workarea[dir.size]
+    return utils.clamp(amount / workarea[dir.size], 0, 1)
 end
 
 ---Generates a tag.
@@ -180,7 +180,7 @@ function M.arrange(p)
         ---@type Workarea
         tree.root.workarea = gTable.clone(p.workarea)
         tree.root.workarea.gap = p.useless_gap or 0
-        tree.root.workarea.split = self.split or 0.5
+        tree.root.split = self.split or 0.5
 
         self.trees[tag] = tree
     end
@@ -242,22 +242,24 @@ end
 
 ---Used to resize the clients
 ---@param client any #The client to resize
----@param amount number #The amount to resize by.
+---@param amount number #The amount to resize by. Note this is a % amount not a float.
 ---@param direction any #Which direction to resize.
 function M.resize(client, amount, direction)
-    if not (client and (amount and amount > 0)) then return end
-    direction = direction or "rigth"
+    amount = amount / 100
 
     local self = M
-    local tree = self.trees[tostring(capi.screen[client.screen].selected_tag or awful.tag.selected(capi.mouse.screen))]
+    local tree = self.trees[self._genTag()]
 
-    if direction == "up" or direction == "left" then amount = amount * -1 end
+    -- makes the amount negative if is up or left. (Going backwards)
+    if direction == "up" or direction == "left" then
+        amount = amount * -1
+    end
 
     local client_node = tree.root:find(client)
-    local node = self._getNodeByDirection(client_node, direction).parent
+    local node = self._getNodeByDirection(client_node, direction)
 
     if node then
-        node.workarea.split = amount
+        node.split = utils.clamp(node.split + amount, 0, 1)
         self.updateGeometry(node)
     end
 end
@@ -284,12 +286,12 @@ function M.mouse_resize_handler(client, corner)
                 prev_coords = { x = mouse.x, y = mouse.y }
 
                 if horizontalNode then
-                    horizontalNode.workarea.split = self.clampSplit(mouse, horizontalNode.workarea, workarea, false)
+                    horizontalNode.split = self.clampSplit(mouse, horizontalNode.workarea, workarea, false)
                     self.updateGeometry(horizontalNode)
                 end
 
                 if verticalNode then
-                    verticalNode.workarea.split = self.clampSplit(mouse, verticalNode.workarea, workarea, true)
+                    verticalNode.split = self.clampSplit(mouse, verticalNode.workarea, workarea, true)
                     self.updateGeometry(verticalNode)
                 end
 
