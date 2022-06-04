@@ -62,8 +62,9 @@ function M.updateGeometry(node)
         end
 
         if node.right then
-            newWorkarea[dir.pos] = newWorkarea[dir.pos] + split + gap
-            node.right.workarea  = gTable.clone(newWorkarea)
+            newWorkarea[dir.size] = utils.clamp(workarea[dir.size] - split - gap, 1, workarea[dir.size] - 1)
+            newWorkarea[dir.pos]  = newWorkarea[dir.pos] + split + gap
+            node.right.workarea   = gTable.clone(newWorkarea)
             M.updateGeometry(node.right)
         end
     end
